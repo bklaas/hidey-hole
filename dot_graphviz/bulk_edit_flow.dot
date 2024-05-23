@@ -1,0 +1,35 @@
+digraph APIEndpointFlow {
+    rankdir=TB;
+    node [shape=box, style=rounded];
+
+    start [label="POST Bulk Edit API", style=filled, fillcolor=green];
+    check_version [label="Check Software Version"];
+    version_mismatch [label="Write Error to GoogleSheet", style=filled, fillcolor=lightblue];
+    read_worksheet [label="Read Worksheet\ninto Dataframe"];
+    entity_check [label="Fork to correct entity process\n(bldg/meter/etc)"];
+    process_data [label="Process Data"];
+    validate_row [label="Validate Row"];
+    process_row [label="Create/Update in Database", style=filled, fillcolor=green];
+    write_success_fail [label="Write Success/Fail Message to Sheets", style=filled, fillcolor=lightblue];
+    all_done [label="All Rows Processed"];
+    api_200_ok [label="200 OK\ntask_id", shape=diamond, style=filled, fillcolor=green];
+    api_500_fail [label="500 Server Error", shape=diamond, style=filled, fillcolor=red];
+    mark_done_in_sheets [label="Mark task_id done in Sheets", style=filled, fillcolor=lightblue];
+
+    start -> check_version;
+    check_version -> version_mismatch [label="Version Mismatch", color=red];
+    version_mismatch -> api_500_fail [color=red];
+    check_version -> read_worksheet [label="Version Match"];
+    read_worksheet->api_500_fail [label= "Read fail", color=red];
+    read_worksheet->api_200_ok[label="Success"];
+    api_200_ok->entity_check[label="Async task"];
+    entity_check->process_data;
+    process_data -> validate_row[label="row-by-row"];
+    validate_row -> process_row[label="Valid"];
+    validate_row -> write_success_fail[label="Invalid"];
+    process_row -> write_success_fail[label="Success or Fail"];
+    write_success_fail -> all_done;
+    write_success_fail -> process_data;
+    all_done -> mark_done_in_sheets;
+}
+
